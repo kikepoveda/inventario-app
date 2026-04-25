@@ -7,7 +7,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 export async function analyzeInventoryImage(base64Image: string) {
   if (!process.env.GEMINI_API_KEY) {
     console.error('ERROR: GEMINI_API_KEY no configurada')
-    return { success: false, error: 'Configuración de IA incompleta' }
+    return { success: false, error: 'Configuración de IA incompleta (Falta API KEY)' }
   }
 
   const prompt = `
@@ -23,13 +23,15 @@ export async function analyzeInventoryImage(base64Image: string) {
 
   const imageData = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image
 
-  // Lista de modelos a intentar en orden de preferencia
-  const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro-vision']
+  // Lista de modelos a intentar
+  const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro']
 
   for (const modelName of modelsToTry) {
     try {
-      console.log(`Intentando análisis con modelo: ${modelName}`)
-      const model = genAI.getGenerativeModel({ model: modelName })
+      console.log(`Intentando análisis con modelo: ${modelName} (API v1)`)
+      
+      // Forzamos v1 en el segundo argumento (RequestOptions)
+      const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' })
       
       const result = await model.generateContent([
         prompt,
@@ -55,11 +57,9 @@ export async function analyzeInventoryImage(base64Image: string) {
 
     } catch (error: any) {
       console.error(`Error con modelo ${modelName}:`, error.message)
-      // Si es el último modelo, lanzamos el error o devolvemos fallo
       if (modelName === modelsToTry[modelsToTry.length - 1]) {
-        return { success: false, error: `No se pudo analizar con ningún modelo. Último error: ${error.message}` }
+        return { success: false, error: `No se pudo conectar con la IA. Verifica tu API KEY y que el servicio esté disponible en tu región. Error: ${error.message}` }
       }
-      // Si no, continuamos al siguiente modelo
       continue
     }
   }
