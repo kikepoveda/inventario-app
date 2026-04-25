@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createInventarioItem, InventarioInsert } from '@/app/actions/inventory'
 import { getAulas } from '@/app/actions/classrooms'
 import { analyzeInventoryImage } from '@/app/actions/vision'
@@ -38,22 +38,14 @@ export default function InventarioForm() {
     setFormData(prev => ({ ...prev, codigo: randomCode }))
   }, [])
 
-  // Efecto para análisis automático si se sube una imagen (especialmente desde cámara)
-  useEffect(() => {
-    if (imageFile) {
-      handleAIAnalysis()
-    }
-  }, [imageFile])
-
-  const handleAIAnalysis = async () => {
-    if (!imageFile) return
+  const handleAIAnalysis = useCallback(async (file: File) => {
     setAnalyzing(true)
     try {
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = () => resolve(reader.result as string)
         reader.onerror = reject
-        reader.readAsDataURL(imageFile)
+        reader.readAsDataURL(file)
       })
 
       const result = await analyzeInventoryImage(base64)
@@ -73,7 +65,14 @@ export default function InventarioForm() {
     } finally {
       setAnalyzing(false)
     }
-  }
+  }, [])
+
+  // Efecto para análisis automático si se sube una imagen (especialmente desde cámara)
+  useEffect(() => {
+    if (imageFile) {
+      handleAIAnalysis(imageFile)
+    }
+  }, [imageFile, handleAIAnalysis])
 
   const handleUploadImage = async (file: File) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -166,16 +165,25 @@ export default function InventarioForm() {
 
               {imageFile && (
                 <div className="flex items-center justify-between p-2.5 bg-purple-50 rounded-md border border-purple-100">
-                  <span className="text-xs text-purple-700 truncate max-w-[120px]">{imageFile.name}</span>
-                  <button
-                    type="button"
-                    onClick={handleAIAnalysis}
-                    disabled={analyzing}
-                    className="btn bg-purple-600 hover:bg-purple-700 text-white text-xs py-1.5 px-3 shadow-sm"
-                  >
-                    <SparklesIcon className="h-3.5 w-3.5 mr-1" />
-                    {analyzing ? 'Analizando...' : 'Auto-IA'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-purple-200 rounded flex items-center justify-center overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={URL.createObjectURL(imageFile)} alt="Preview" className="object-cover w-full h-full" />
+                    </div>
+                    <span className="text-xs text-purple-700 truncate max-w-[100px]">{imageFile.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {analyzing ? (
+                      <div className="flex items-center text-purple-600 text-xs font-medium animate-pulse">
+                        <SparklesIcon className="h-4 w-4 mr-1" />
+                        Detectando...
+                      </div>
+                    ) : (
+                      <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-bold uppercase">
+                        Autocompletado listo
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -298,7 +306,7 @@ export default function InventarioForm() {
         <button type="button" onClick={() => router.back()} className="btn border-gray-300 bg-white text-gray-700 py-2.5">
           Cancelar
         </button>
-        <button type="submit" disabled={loading} className="btn btn-primary py-2.5 px-8">
+        <button type="submit" disabled={loading || analyzing} className="btn btn-primary py-2.5 px-8">
           {loading ? 'Guardando...' : 'Guardar Ítem'}
         </button>
       </div>
