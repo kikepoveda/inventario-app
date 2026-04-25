@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createInventarioItem, InventarioInsert } from '@/app/actions/inventory'
+import { createInventarioItem, updateInventarioItem, InventarioInsert } from '@/app/actions/inventory'
 import { getAulas } from '@/app/actions/classrooms'
 import { analyzeInventoryImage } from '@/app/actions/vision'
 import { useRouter } from 'next/navigation'
@@ -9,15 +9,21 @@ import { createClient } from '@/lib/supabase/client'
 import { SparklesIcon, PhotoIcon } from '@heroicons/react/24/outline'
 import { Database } from '@/types/database'
 
-export default function InventarioForm() {
+export default function InventarioForm({ 
+  initialData, 
+  id 
+}: { 
+  initialData?: Omit<InventarioInsert, 'centro_id'>,
+  id?: string 
+}) {
   const router = useRouter()
   const supabase = createClient()
   const [aulas, setAulas] = useState<Database['public']['Tables']['aulas']['Row'][]>([])
   const [loading, setLoading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialData?.imagen_url || null)
 
-  const [formData, setFormData] = useState<Omit<InventarioInsert, 'centro_id'>>({
+  const [formData, setFormData] = useState<Omit<InventarioInsert, 'centro_id'>>(initialData || {
     codigo: '',
     nombre: '',
     marca: '',
@@ -33,9 +39,11 @@ export default function InventarioForm() {
 
   useEffect(() => {
     getAulas().then(setAulas)
-    const randomCode = `PROD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
-    setFormData(prev => ({ ...prev, codigo: randomCode }))
-  }, [])
+    if (!id && !formData.codigo) {
+      const randomCode = `PROD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+      setFormData(prev => ({ ...prev, codigo: randomCode }))
+    }
+  }, [id])
 
   const resizeImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -132,6 +140,7 @@ export default function InventarioForm() {
         }))
       } else {
         console.error('La IA no pudo procesar la imagen:', result?.error)
+        alert('La IA no pudo analizar la imagen: ' + (result?.error || 'Error desconocido'))
       }
     } catch (err: any) {
       console.error('Error en proceso de imagen:', err)
@@ -148,7 +157,11 @@ export default function InventarioForm() {
     e.preventDefault()
     setLoading(true)
     try {
-      await createInventarioItem(formData)
+      if (id) {
+        await updateInventarioItem(id, formData)
+      } else {
+        await createInventarioItem(formData)
+      }
       router.push('/dashboard/inventario')
     } catch (err: any) {
       alert(err.message)
@@ -248,6 +261,25 @@ export default function InventarioForm() {
                 className="input w-full"
                 value={formData.modelo || ''}
                 onChange={e => setFormData({...formData, modelo: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nº Serie</label>
+              <input
+                className="input w-full"
+                value={formData.numero_serie || ''}
+                onChange={e => setFormData({...formData, numero_serie: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+              <input
+                className="input w-full"
+                value={formData.categoria || ''}
+                onChange={e => setFormData({...formData, categoria: e.target.value})}
               />
             </div>
           </div>

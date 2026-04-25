@@ -29,6 +29,21 @@ export async function getInventario() {
   }
 }
 
+export async function getInventarioItem(id: string) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('inventario')
+    .select('*')
+    .eq('id', id)
+    .single()
+  
+  if (error) {
+    console.error('Error fetching inventory item:', error)
+    return null
+  }
+  return data
+}
+
 export async function createInventarioItem(item: Omit<InventarioInsert, 'centro_id'>) {
   const supabase = await createClient()
   
