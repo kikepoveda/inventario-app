@@ -43,15 +43,15 @@ export async function inviteUser(email: string, nombre: string, role: 'admin' | 
     throw new Error(`Error en Auth: ${authError.message}`)
   }
 
-  // 3. Actualizar perfil (El trigger inicial lo crea como 'centro', lo corregimos si es 'admin' o asignamos centro)
+  // 3. Crear o actualizar perfil (Usamos upsert para evitar fallos si el trigger de auth no ha terminado)
   const { error: perfilError } = await supabaseAdmin
     .from('perfiles')
-    .update({ 
+    .upsert({ 
+      id: userData.user.id,
       role, 
       centro_id: centro_id || null, 
       nombre 
     })
-    .eq('id', userData.user.id)
 
   if (perfilError) {
     console.error('Profile update error:', perfilError)
