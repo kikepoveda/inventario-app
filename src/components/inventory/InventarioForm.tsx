@@ -19,7 +19,7 @@ export default function InventarioForm() {
 
   const [formData, setFormData] = useState<Omit<InventarioInsert, 'centro_id'>>({
     codigo: '',
-    nombre: '',
+    nombre: 'Producto',
     marca: '',
     modelo: '',
     numero_serie: '',
@@ -33,6 +33,9 @@ export default function InventarioForm() {
 
   useEffect(() => {
     getAulas().then(setAulas)
+    // Generar código automático si está vacío
+    const randomCode = `PROD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+    setFormData(prev => ({ ...prev, codigo: randomCode }))
   }, [])
 
   const handleAIAnalysis = async () => {
@@ -180,7 +183,7 @@ export default function InventarioForm() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Nombre del Bien *</label>
+            <label className="block text-sm font-medium text-gray-700">Producto *</label>
             <input
               required
               className="input mt-1"

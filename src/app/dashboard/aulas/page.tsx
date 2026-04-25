@@ -68,6 +68,17 @@ export default function AulasPage() {
     }
   }
 
+  const downloadTemplate = () => {
+    const csvContent = "data:text/csv;charset=utf-8,Aula 101\nAula 102\nLaboratorio Informatica\nBiblioteca"
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement("a")
+    link.setAttribute("href", encodedUri)
+    link.setAttribute("download", "plantilla_aulas.csv")
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
@@ -91,7 +102,15 @@ export default function AulasPage() {
           </form>
 
           <div className="mt-8 pt-8 border-t border-gray-100">
-            <h3 className="text-lg font-medium mb-4">Importar CSV</h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Importar CSV</h3>
+              <button 
+                onClick={downloadTemplate}
+                className="text-xs text-primary-600 hover:underline"
+              >
+                Descargar Plantilla
+              </button>
+            </div>
             <p className="text-xs text-gray-500 mb-4">Sube un archivo .csv con un nombre de aula por línea.</p>
             <label className="btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 w-full cursor-pointer">
               <CloudArrowUpIcon className="h-5 w-5 mr-2" />

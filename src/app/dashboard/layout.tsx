@@ -29,19 +29,31 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  // 3. Obtener perfil con manejo de errores
+  // 3. Obtener perfil (Primero sin JOIN para evitar bloqueos de RLS circulares)
   let perfil = null
+  let centro = null
+  
   try {
-    const { data, error } = await supabase
+    const { data: perfilData, error: perfilError } = await supabase
       .from('perfiles')
-      .select('*, centros(nombre)')
+      .select('*')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
     
-    if (error) {
-      console.error('Error fetching profile in layout:', error)
-    } else {
-      perfil = data
+    if (perfilError) {
+      console.error('Error fetching profile:', perfilError)
+    } else if (perfilData) {
+      perfil = perfilData
+      
+      // 3.1. Si tiene centro, obtenerlo aparte
+      if (perfil.centro_id) {
+        const { data: centroData } = await supabase
+          .from('centros')
+          .select('nombre')
+          .eq('id', perfil.centro_id)
+          .maybeSingle()
+        centro = centroData
+      }
     }
   } catch (err) {
     console.error('Unexpected error in layout profile fetch:', err)
@@ -82,7 +94,7 @@ export default async function DashboardLayout({
       <div className="lg:pl-72">
         <Header 
           userEmail={user.email} 
-          centroNombre={perfil.centros?.nombre || 'Sin centro asignado'} 
+          centroNombre={centro?.nombre || 'Sin centro asignado'} 
         />
         <main className="py-10">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

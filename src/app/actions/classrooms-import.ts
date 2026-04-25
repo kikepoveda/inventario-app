@@ -2,27 +2,20 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import Papa from 'papaparse'
-
 export async function importAulasCSV(formData: FormData) {
-  const file = formData.get('csv') as File
-  if (!file) throw new Error('No se subió ningún archivo')
+  try {
+    const file = formData.get('csv') as File
+    if (!file) throw new Error('No se subió ningún archivo')
 
-  const text = await file.text()
-  
-  // Parsing robusto con Papaparse
-  const parsed = Papa.parse(text, {
-    header: false,
-    skipEmptyLines: true,
-  })
-
-  if (parsed.errors.length > 0) {
-    console.error('CSV Parsing errors:', parsed.errors)
-    throw new Error('Error al leer el archivo CSV')
-  }
-
-  const names = (parsed.data as string[][]).map(row => row[0]?.trim()).filter(Boolean)
-  if (names.length === 0) throw new Error('El archivo CSV está vacío o no tiene el formato correcto')
+    const text = await file.text()
+    
+    // Parsing simple: un nombre por línea
+    const names = text
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(line => line.length > 0 && !line.startsWith('data:text/csv')) // Limpiar posibles restos de URI
+    
+    if (names.length === 0) throw new Error('El archivo está vacío o no tiene el formato correcto')
 
   const supabase = await createClient()
 
@@ -56,4 +49,8 @@ export async function importAulasCSV(formData: FormData) {
   }
 
   revalidatePath('/dashboard/aulas')
+  } catch (err: any) {
+    console.error('Import Error:', err)
+    throw new Error(err.message || 'Error desconocido al importar')
+  }
 }
