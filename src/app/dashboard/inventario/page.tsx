@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { getInventario, deleteInventarioItem } from '@/app/actions/inventory'
 import { getAulas } from '@/app/actions/classrooms'
+import { getCentros } from '@/app/actions/admin'
 import { PlusIcon, MagnifyingGlassIcon, DocumentArrowDownIcon, TableCellsIcon, QrCodeIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { exportToPDF, exportToExcel } from '@/lib/utils/exports'
@@ -11,6 +12,7 @@ import { Database } from '@/types/database'
 
 type InventarioItem = Database['public']['Tables']['inventario']['Row'] & {
   aulas: { nombre: string } | null
+  centros: { nombre: string } | null
 }
 
 export const dynamic = 'force-dynamic'
@@ -18,9 +20,11 @@ export const dynamic = 'force-dynamic'
 export default function InventarioPage() {
   const [items, setItems] = useState<InventarioItem[]>([])
   const [aulas, setAulas] = useState<Database['public']['Tables']['aulas']['Row'][]>([])
+  const [centros, setCentros] = useState<Database['public']['Tables']['centros']['Row'][]>([])
   const [search, setSearch] = useState('')
   const [filterEstado, setFilterEstado] = useState('')
   const [filterAula, setFilterAula] = useState('')
+  const [filterCentro, setFilterCentro] = useState('')
   const [loading, setLoading] = useState(true)
   const [selectedQR, setSelectedQR] = useState<{codigo: string, nombre: string} | null>(null)
 
@@ -44,9 +48,18 @@ export default function InventarioPage() {
     }
   }
 
+  const loadCentros = async () => {
+    try {
+      const data = await getCentros()
+      setCentros(data)
+    } catch (err: unknown) {
+      console.error('Error loading centers:', err)
+    }
+  }
+
   useEffect(() => {
     const fetchData = async () => {
-      await Promise.all([loadInventario(), loadAulas()])
+      await Promise.all([loadInventario(), loadAulas(), loadCentros()])
     }
     fetchData()
   }, [])
@@ -65,8 +78,9 @@ export default function InventarioPage() {
     
     const matchesEstado = filterEstado === '' || item.estado === filterEstado
     const matchesAula = filterAula === '' || item.aula_id === filterAula
+    const matchesCentro = filterCentro === '' || item.centro_id === filterCentro
 
-    return matchesSearch && matchesEstado && matchesAula
+    return matchesSearch && matchesEstado && matchesAula && matchesCentro
   })
 
   return (
@@ -133,6 +147,18 @@ export default function InventarioPage() {
             <option key={aula.id} value={aula.id}>{aula.nombre}</option>
           ))}
         </select>
+        {centros.length > 0 && (
+          <select 
+            className="input"
+            value={filterCentro}
+            onChange={(e) => setFilterCentro(e.target.value)}
+          >
+            <option value="">Todos los centros</option>
+            {centros.map(centro => (
+              <option key={centro.id} value={centro.id}>{centro.nombre}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="overflow-hidden bg-white shadow sm:rounded-lg border border-gray-200">
@@ -142,6 +168,7 @@ export default function InventarioPage() {
               <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">QR</th>
               <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Código</th>
               <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Nombre</th>
+              <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Centro</th>
               <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Aula</th>
               <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Estado</th>
               <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 text-right">Acciones</th>
@@ -164,6 +191,7 @@ export default function InventarioPage() {
                   <div className="font-medium text-gray-900">{item.nombre}</div>
                   <div className="text-xs text-gray-400">{item.marca} {item.modelo}</div>
                 </td>
+                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.centros?.nombre || '-'}</td>
                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.aulas?.nombre || 'Sin aula'}</td>
                 <td className="whitespace-nowrap px-3 py-4 text-sm">
                   <span className={`px-2 py-1 rounded-full text-xs font-semibold ${

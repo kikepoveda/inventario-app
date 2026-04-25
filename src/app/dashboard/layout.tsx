@@ -47,22 +47,24 @@ export default async function DashboardLayout({
     console.error('Unexpected error in layout profile fetch:', err)
   }
 
-  // 4. Manejo de perfil faltante (Protección extra)
+  // 4. Manejo de perfil faltante o incompleto
   if (!perfil) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6 text-center">
-        <h2 className="text-xl font-bold text-gray-900">Perfil incompleto</h2>
-        <p className="mt-2 text-gray-600">Tu cuenta no tiene un perfil asociado o centro asignado.</p>
-        <div className="mt-6 flex gap-4">
-          <a href="/dashboard" className="btn btn-primary">
-            Reintentar
-          </a>
-          <a href="/login" className="btn border-gray-300 bg-white">
-            Volver al Login
-          </a>
+    // Si no hay perfil pero el usuario está en Auth, puede ser un Admin recién creado
+    // o un error de sincronización. Intentamos ver si es admin por email.
+    if (user.email === 'kike.poveda@gmail.com') {
+      // Forzar visualización como admin provisional si es el correo del dueño
+      perfil = { role: 'admin', nombre: 'Kike (Admin)', centro_id: null }
+    } else {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6 text-center">
+          <h2 className="text-xl font-bold text-gray-900">Acceso Restringido</h2>
+          <p className="mt-2 text-gray-600">Tu usuario no tiene un perfil configurado en el sistema.</p>
+          <div className="mt-6">
+            <a href="/login" className="btn btn-primary">Volver al Login</a>
+          </div>
         </div>
-      </div>
-    )
+      )
+    }
   }
 
   return (

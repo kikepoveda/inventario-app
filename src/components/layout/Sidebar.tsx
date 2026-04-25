@@ -34,7 +34,7 @@ export default function Sidebar({ role }: { role?: string }) {
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
           <li>
             <ul role="list" className="-mx-2 space-y-1">
-              {(role === 'admin' ? adminNavigation : navigation).map((item) => (
+              {(role === 'admin' ? [...navigation, ...adminNavigation] : navigation).map((item) => (
                 <li key={item.name}>
                   <Link
                     href={item.href}

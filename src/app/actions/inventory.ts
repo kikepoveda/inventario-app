@@ -12,14 +12,17 @@ export async function getInventario() {
   try {
     const { data, error } = await supabase
       .from('inventario')
-      .select('*, aulas(nombre)')
+      .select('*, aulas(nombre), centros(nombre)')
       .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Database error in getInventario:', error)
       return []
     }
-    return data as (Database['public']['Tables']['inventario']['Row'] & { aulas: { nombre: string } | null })[]
+    return data as (Database['public']['Tables']['inventario']['Row'] & { 
+      aulas: { nombre: string } | null,
+      centros: { nombre: string } | null 
+    })[]
   } catch (err) {
     console.error('Unexpected error in getInventario:', err)
     return []
