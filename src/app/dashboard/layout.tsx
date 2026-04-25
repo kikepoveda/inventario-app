@@ -49,18 +49,24 @@ export default async function DashboardLayout({
 
   // 4. Manejo de perfil faltante o incompleto
   if (!perfil) {
-    // Si no hay perfil pero el usuario está en Auth, puede ser un Admin recién creado
-    // o un error de sincronización. Intentamos ver si es admin por email.
-    if (user.email === 'kike.poveda@gmail.com') {
+    const isAdminEmail = user.email?.toLowerCase() === 'kike.poveda@gmail.com'
+    
+    if (isAdminEmail) {
       // Forzar visualización como admin provisional si es el correo del dueño
       perfil = { role: 'admin', nombre: 'Kike (Admin)', centro_id: null }
     } else {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6 text-center">
-          <h2 className="text-xl font-bold text-gray-900">Acceso Restringido</h2>
-          <p className="mt-2 text-gray-600">Tu usuario no tiene un perfil configurado en el sistema.</p>
-          <div className="mt-6">
-            <a href="/login" className="btn btn-primary">Volver al Login</a>
+          <h2 className="text-xl font-bold text-gray-900">Perfil Incompleto</h2>
+          <p className="mt-2 text-gray-600">
+            Tu usuario (<span className="font-semibold">{user.email}</span>) no tiene un perfil configurado.
+          </p>
+          <p className="mt-1 text-sm text-gray-500 italic">
+            ID: {user.id}
+          </p>
+          <div className="mt-6 flex gap-4">
+            <a href="/dashboard" className="btn btn-primary">Reintentar</a>
+            <a href="/login" className="btn border-gray-300 bg-white">Cerrar Sesión</a>
           </div>
         </div>
       )
