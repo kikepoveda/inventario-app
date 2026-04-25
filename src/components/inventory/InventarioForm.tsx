@@ -70,7 +70,15 @@ export default function InventarioForm() {
     setPreviewUrl(URL.createObjectURL(file))
     
     try {
-      // 1. Obtener sesión y perfil para el centro_id
+      // 1. Iniciar Análisis de IA de inmediato (usando base64 local)
+      // Esto asegura que el formulario se rellene incluso si el upload tarda
+      console.log('Iniciando análisis con IA (base64)...')
+      const resizedBase64 = await resizeImage(file)
+      
+      // Lanzamos la IA en paralelo o primero
+      const aiPromise = analyzeInventoryImage(resizedBase64)
+
+      // 2. Obtener sesión y perfil para el upload
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Usuario no autenticado')
 
@@ -82,33 +90,34 @@ export default function InventarioForm() {
       
       if (!perfil?.centro_id) throw new Error('No se encontró el centro asociado')
 
-      // 2. Subir imagen a Supabase Storage
+      // 3. Subir imagen a Supabase Storage
       const fileExt = file.name ? file.name.split('.').pop() : 'jpg'
       const fileName = `${perfil.centro_id}/${Date.now()}.${fileExt}`
       
-      console.log('Iniciando subida a Supabase:', fileName)
+      console.log('Iniciando subida a Supabase (Bucket: inventario_imagenes):', fileName)
       const { error: uploadError } = await supabase.storage
         .from('inventario_imagenes')
         .upload(fileName, file)
 
       if (uploadError) {
-        console.error('Error subiendo imagen:', uploadError)
+        console.error('Error CRÍTICO en Storage:', uploadError)
+        // Si es error de RLS, avisamos específicamente
+        if (uploadError.message.includes('row-level security')) {
+          alert('Error de Seguridad (RLS): No tienes permiso para subir a esta carpeta. Por favor, ejecuta el script de corrección de políticas en Supabase.')
+        }
         throw new Error(`Error en Storage: ${uploadError.message}`)
       }
 
-      // 3. Obtener URL pública y guardar en formData
+      // 4. Obtener URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('inventario_imagenes')
         .getPublicUrl(fileName)
       
       setFormData(prev => ({ ...prev, imagen_url: publicUrl }))
-      console.log('Imagen subida correctamente. URL:', publicUrl)
+      console.log('Imagen subida correctamente:', publicUrl)
 
-      // 4. Analizar con IA (Gemini)
-      console.log('Iniciando análisis con IA...')
-      const resizedBase64 = await resizeImage(file)
-      const result = await analyzeInventoryImage(resizedBase64)
-      
+      // 5. Esperar resultado de IA si aún no ha terminado
+      const result = await aiPromise
       if (result) {
         console.log('Datos recibidos de IA:', result)
         setFormData(prev => ({
@@ -122,7 +131,10 @@ export default function InventarioForm() {
       }
     } catch (err: any) {
       console.error('Error en proceso de imagen:', err)
-      alert(err.message || 'Error al procesar la imagen')
+      // Solo mostramos alert si no es el de RLS (que ya mostramos arriba)
+      if (!err.message.includes('row-level security')) {
+        alert(err.message || 'Error al procesar la imagen')
+      }
     } finally {
       setAnalyzing(false)
     }
