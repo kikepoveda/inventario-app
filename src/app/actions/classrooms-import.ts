@@ -56,5 +56,4 @@ export async function importAulasCSV(formData: FormData) {
   }
 
   revalidatePath('/dashboard/aulas')
-  revalidatePath('/dashboard/configuracion')
 }

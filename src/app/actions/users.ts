@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient, createAdminClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
 
 export async function inviteUser(email: string, nombre: string, role: 'admin' | 'centro', password?: string, centro_id?: string) {
   const supabase = await createClient()

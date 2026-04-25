@@ -70,7 +70,6 @@ export async function createAula(nombre: string) {
   
   console.log('Aula created successfully:', data.id)
   revalidatePath('/dashboard/aulas')
-  revalidatePath('/dashboard/configuracion')
   return data
 }
 
@@ -91,5 +90,4 @@ export async function deleteAula(id: string) {
   }
   
   revalidatePath('/dashboard/aulas')
-  revalidatePath('/dashboard/configuracion')
 }
