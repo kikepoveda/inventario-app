@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { createInventarioItem, InventarioInsert } from '@/app/actions/inventory'
 import { getAulas } from '@/app/actions/classrooms'
 import { analyzeInventoryImage } from '@/app/actions/vision'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { SparklesIcon } from '@heroicons/react/24/outline'
+import { SparklesIcon, PhotoIcon } from '@heroicons/react/24/outline'
 import { Database } from '@/types/database'
 
 export default function InventarioForm() {
@@ -15,11 +15,11 @@ export default function InventarioForm() {
   const [aulas, setAulas] = useState<Database['public']['Tables']['aulas']['Row'][]>([])
   const [loading, setLoading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
-  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   const [formData, setFormData] = useState<Omit<InventarioInsert, 'centro_id'>>({
     codigo: '',
-    nombre: 'Producto',
+    nombre: '',
     marca: '',
     modelo: '',
     numero_serie: '',
@@ -33,50 +33,84 @@ export default function InventarioForm() {
 
   useEffect(() => {
     getAulas().then(setAulas)
-    // Generar código automático si está vacío
     const randomCode = `PROD-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
     setFormData(prev => ({ ...prev, codigo: randomCode }))
   }, [])
 
-  const handleAIAnalysis = useCallback(async (file: File) => {
-    setAnalyzing(true)
-    try {
-      // 1. Redimensionar imagen para evitar límites de tamaño de Server Actions (1MB)
-      const resizedBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          const img = new Image()
-          img.onload = () => {
-            const canvas = document.createElement('canvas')
-            let width = img.width
-            let height = img.height
-            const max = 1024
-            if (width > height) {
-              if (width > max) {
-                height *= max / width
-                width = max
-              }
-            } else {
-              if (height > max) {
-                width *= max / height
-                height = max
-              }
-            }
-            canvas.width = width
-            canvas.height = height
-            const ctx = canvas.getContext('2d')
-            ctx?.drawImage(img, 0, 0, width, height)
-            resolve(canvas.toDataURL('image/jpeg', 0.7)) // Calidad 0.7 para reducir peso
+  const resizeImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const MAX_WIDTH = 1024
+          let width = img.width
+          let height = img.height
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width
+            width = MAX_WIDTH
           }
-          img.onerror = reject
-          img.src = e.target?.result as string
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx?.drawImage(img, 0, 0, width, height)
+          resolve(canvas.toDataURL('image/jpeg', 0.8))
         }
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
+        img.onerror = reject
+        img.src = e.target?.result as string
+      }
+      reader.onerror = reject
+      reader.readAsDataURL(file)
+    })
+  }
 
+  const handleImageProcess = async (file: File) => {
+    setAnalyzing(true)
+    setPreviewUrl(URL.createObjectURL(file))
+    
+    try {
+      // 1. Obtener sesión y perfil para el centro_id
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuario no autenticado')
+
+      const { data: perfil } = await supabase
+        .from('perfiles')
+        .select('centro_id')
+        .eq('id', user.id)
+        .single()
+      
+      if (!perfil?.centro_id) throw new Error('No se encontró el centro asociado')
+
+      // 2. Subir imagen a Supabase Storage
+      const fileExt = file.name ? file.name.split('.').pop() : 'jpg'
+      const fileName = `imagenes/${perfil.centro_id}-${Date.now()}.${fileExt}`
+      
+      console.log('Iniciando subida a Supabase:', fileName)
+      const { error: uploadError } = await supabase.storage
+        .from('inventario_imagenes')
+        .upload(fileName, file)
+
+      if (uploadError) {
+        console.error('Error subiendo imagen:', uploadError)
+        throw new Error(`Error en Storage: ${uploadError.message}`)
+      }
+
+      // 3. Obtener URL pública y guardar en formData
+      const { data: { publicUrl } } = supabase.storage
+        .from('inventario_imagenes')
+        .getPublicUrl(fileName)
+      
+      setFormData(prev => ({ ...prev, imagen_url: publicUrl }))
+      console.log('Imagen subida correctamente. URL:', publicUrl)
+
+      // 4. Analizar con IA (Gemini)
+      console.log('Iniciando análisis con IA...')
+      const resizedBase64 = await resizeImage(file)
       const result = await analyzeInventoryImage(resizedBase64)
+      
       if (result) {
+        console.log('Datos recibidos de IA:', result)
         setFormData(prev => ({
           ...prev,
           nombre: result.nombre || prev.nombre,
@@ -85,69 +119,23 @@ export default function InventarioForm() {
           categoria: result.categoria || prev.categoria,
           observaciones: result.descripcion_breve || prev.observaciones
         }))
-      } else {
-        console.warn('AI analysis returned no structured data')
       }
-    } catch (err: unknown) {
-      console.error('AI Analysis Error:', err)
-      alert(err instanceof Error ? err.message : 'Error al analizar la imagen')
+    } catch (err: any) {
+      console.error('Error en proceso de imagen:', err)
+      alert(err.message || 'Error al procesar la imagen')
     } finally {
       setAnalyzing(false)
     }
-  }, [])
-
-  // Efecto para análisis automático si se sube una imagen (especialmente desde cámara)
-  useEffect(() => {
-    if (imageFile) {
-      handleAIAnalysis(imageFile)
-    }
-  }, [imageFile, handleAIAnalysis])
-
-  const handleUploadImage = async (file: File) => {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) throw new Error('No autorizado para subir imágenes')
-
-    const { data: perfil, error: perfilError } = await supabase
-      .from('perfiles')
-      .select('centro_id')
-      .eq('id', user.id)
-      .single()
-
-    if (perfilError || !perfil?.centro_id) throw new Error('No se encontró el centro asociado')
-
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${perfil.centro_id}/${Math.random()}.${fileExt}`
-
-    const { error: uploadError } = await supabase.storage
-      .from('inventario_imagenes')
-      .upload(fileName, file)
-
-    if (uploadError) {
-      console.error('Upload Error:', uploadError)
-      throw new Error('Error al subir la imagen al servidor')
-    }
-    
-    const { data: { publicUrl } } = supabase.storage
-      .from('inventario_imagenes')
-      .getPublicUrl(fileName)
-
-    return publicUrl
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     try {
-      let finalImageUrl = formData.imagen_url
-      if (imageFile) {
-        finalImageUrl = await handleUploadImage(imageFile) || ''
-      }
-
-      await createInventarioItem({ ...formData, imagen_url: finalImageUrl })
+      await createInventarioItem(formData)
       router.push('/dashboard/inventario')
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error desconocido')
+    } catch (err: any) {
+      alert(err.message)
     } finally {
       setLoading(false)
     }
@@ -155,69 +143,58 @@ export default function InventarioForm() {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto bg-white p-4 sm:p-8 rounded-lg shadow border border-gray-200">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Sección Imagen */}
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Imagen / Cámara</label>
-            <div className="flex flex-col gap-3">
-              <div className="flex gap-2">
-                <input
-                  type="file"
-                  accept="image/*"
-                  id="image-upload"
-                  className="hidden"
-                  onChange={e => setImageFile(e.target.files?.[0] || null)}
-                />
-                <button
-                  type="button"
-                  onClick={() => document.getElementById('image-upload')?.click()}
-                  className="btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex-1 py-2.5"
-                >
-                  Subir
-                </button>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  id="camera-capture"
-                  className="hidden"
-                  onChange={e => setImageFile(e.target.files?.[0] || null)}
-                />
-                <button
-                  type="button"
-                  onClick={() => document.getElementById('camera-capture')?.click()}
-                  className="btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex-1 py-2.5"
-                >
-                  Cámara
-                </button>
+          <label className="block text-sm font-medium text-gray-700">Imagen del Producto</label>
+          <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 hover:bg-gray-100 transition-colors relative">
+            {previewUrl ? (
+              <div className="relative w-full aspect-square rounded-lg overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={previewUrl} alt="Vista previa" className="object-cover w-full h-full" />
+                {analyzing && (
+                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white p-4 text-center">
+                    <SparklesIcon className="h-10 w-10 animate-bounce mb-2" />
+                    <p className="font-bold">Analizando con IA...</p>
+                    <p className="text-xs">Rellenando campos automáticamente</p>
+                  </div>
+                )}
               </div>
-
-              {imageFile && (
-                <div className="flex items-center justify-between p-2.5 bg-purple-50 rounded-md border border-purple-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-purple-200 rounded flex items-center justify-center overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={URL.createObjectURL(imageFile)} alt="Preview" className="object-cover w-full h-full" />
-                    </div>
-                    <span className="text-xs text-purple-700 truncate max-w-[100px]">{imageFile.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {analyzing ? (
-                      <div className="flex items-center text-purple-600 text-xs font-medium animate-pulse">
-                        <SparklesIcon className="h-4 w-4 mr-1" />
-                        Detectando...
-                      </div>
-                    ) : (
-                      <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-bold uppercase">
-                        Autocompletado listo
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
+            ) : (
+              <div className="text-center">
+                <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <p className="mt-2 text-sm text-gray-600">Haz una foto o sube un archivo</p>
+              </div>
+            )}
+            
+            <div className="mt-4 flex gap-2 w-full">
+              <label className="btn border-gray-300 bg-white text-gray-700 flex-1 py-2.5 text-center cursor-pointer">
+                Subir Archivo
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={e => e.target.files?.[0] && handleImageProcess(e.target.files[0])}
+                  disabled={analyzing}
+                />
+              </label>
+              <label className="btn border-gray-300 bg-white text-gray-700 flex-1 py-2.5 text-center cursor-pointer">
+                Hacer Foto
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment" 
+                  className="hidden" 
+                  onChange={e => e.target.files?.[0] && handleImageProcess(e.target.files[0])}
+                  disabled={analyzing}
+                />
+              </label>
             </div>
           </div>
-          
+        </div>
+
+        {/* Campos del Formulario */}
+        <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Código *</label>
@@ -232,6 +209,7 @@ export default function InventarioForm() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Producto *</label>
               <input
                 required
+                placeholder="Nombre del bien"
                 className="input w-full"
                 value={formData.nombre}
                 onChange={e => setFormData({...formData, nombre: e.target.value})}
@@ -254,27 +232,6 @@ export default function InventarioForm() {
                 className="input w-full"
                 value={formData.modelo || ''}
                 onChange={e => setFormData({...formData, modelo: e.target.value})}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nº Serie</label>
-              <input
-                className="input w-full"
-                value={formData.numero_serie || ''}
-                onChange={e => setFormData({...formData, numero_serie: e.target.value})}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-              <input
-                className="input w-full"
-                value={formData.categoria || ''}
-                onChange={e => setFormData({...formData, categoria: e.target.value})}
               />
             </div>
           </div>
@@ -309,7 +266,7 @@ export default function InventarioForm() {
               <select
                 className="input w-full"
                 value={formData.estado}
-                onChange={e => setFormData({...formData, estado: e.target.value as Database['public']['Enums']['inventory_status']})}
+                onChange={e => setFormData({...formData, estado: e.target.value as any})}
               >
                 <option value="bueno">Bueno</option>
                 <option value="regular">Regular</option>
@@ -318,24 +275,24 @@ export default function InventarioForm() {
               </select>
             </div>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+            <textarea
+              rows={3}
+              className="input w-full"
+              value={formData.observaciones || ''}
+              onChange={e => setFormData({...formData, observaciones: e.target.value})}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="mt-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-        <textarea
-          rows={3}
-          className="input w-full"
-          value={formData.observaciones || ''}
-          onChange={e => setFormData({...formData, observaciones: e.target.value})}
-        />
-      </div>
-
-      <div className="mt-8 flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4">
+      <div className="mt-8 pt-6 border-t flex flex-col-reverse sm:flex-row justify-end gap-4">
         <button type="button" onClick={() => router.back()} className="btn border-gray-300 bg-white text-gray-700 py-2.5">
           Cancelar
         </button>
-        <button type="submit" disabled={loading || analyzing} className="btn btn-primary py-2.5 px-8">
+        <button type="submit" disabled={loading || analyzing} className="btn btn-primary py-2.5 px-8 shadow-md">
           {loading ? 'Guardando...' : 'Guardar Ítem'}
         </button>
       </div>

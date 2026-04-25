@@ -5,22 +5,30 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
 export async function analyzeInventoryImage(base64Image: string) {
+  if (!process.env.GEMINI_API_KEY) {
+    console.error('CRITICAL: GEMINI_API_KEY is not set')
+    throw new Error('Configuración de IA incompleta')
+  }
+
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      generationConfig: {
+        responseMimeType: "application/json",
+      }
+    })
 
     const prompt = `
-      Analiza esta imagen de un objeto de inventario escolar. 
-      Devuelve un objeto JSON con los siguientes campos basados en lo que ves:
-      - nombre (ej: Silla ergonómica, Microscopio óptico)
-      - marca (si es visible)
-      - modelo (si es visible)
-      - categoria (ej: Mobiliario, Laboratorio, Informática)
-      - descripcion_breve
-      
-      Responde SOLO con el JSON.
+      Analiza esta imagen de un objeto de inventario y devuelve un JSON con:
+      {
+        "nombre": "nombre del producto",
+        "marca": "marca si existe",
+        "modelo": "modelo si existe",
+        "categoria": "Mobiliario|Laboratorio|Informática|Otros",
+        "descripcion_breve": "breve descripción"
+      }
     `
 
-    // Limpiar el prefijo base64 si existe
     const imageData = base64Image.split(',')[1] || base64Image
 
     const result = await model.generateContent([
@@ -35,25 +43,12 @@ export async function analyzeInventoryImage(base64Image: string) {
 
     const response = await result.response
     const text = response.text()
-    console.log('AI Vision Raw Response:', text)
+    console.log('Gemini Response:', text)
     
-    // Extraer JSON del texto (a veces Gemini añade backticks o explicaciones)
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (jsonMatch) {
-      try {
-        const cleanJson = JSON.parse(jsonMatch[0])
-        return cleanJson
-      } catch (parseError) {
-        console.error('JSON Parse error in vision:', parseError, 'Text:', text)
-        return null // Devolver null en lugar de lanzar error para evitar crash en SSR/Actions
-      }
-    }
-    
-    console.warn('No structured JSON found in AI response')
-    return null
+    return JSON.parse(text)
     
   } catch (error: unknown) {
     console.error('Error in analyzeInventoryImage:', error)
-    return null // Retornar null para que el cliente lo maneje sin crashear el render
+    throw error
   }
 }
