@@ -6,29 +6,51 @@ import { Database } from '@/types/database'
 
 export async function getCentros() {
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('centros')
-    .select('*')
-    .order('nombre')
+  try {
+    const { data, error } = await supabase
+      .from('centros')
+      .select('*')
+      .order('nombre')
 
-  if (error) throw new Error(error.message)
-  return data as Database['public']['Tables']['centros']['Row'][]
+    if (error) {
+      console.error('Database error in getCentros:', error)
+      return []
+    }
+    return data as Database['public']['Tables']['centros']['Row'][]
+  } catch (err) {
+    console.error('Unexpected error in getCentros:', err)
+    return []
+  }
 }
 
 export async function createCentro(nombre: string) {
   const supabase = await createClient()
   
-  // Verificación de rol admin (opcional aquí si RLS ya lo hace)
-  const { data: perfil } = await supabase.from('perfiles').select('role').single()
-  if (perfil?.role !== 'admin') throw new Error('No autorizado')
+  // 1. Verificar autenticación y rol admin
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) throw new Error('No autorizado')
 
+  const { data: perfil, error: perfilError } = await supabase
+    .from('perfiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  
+  if (perfilError || perfil?.role !== 'admin') {
+    throw new Error('No tienes permisos de administrador global')
+  }
+
+  // 2. Insertar
   const { data, error } = await supabase
     .from('centros')
     .insert({ nombre })
     .select()
     .single()
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('Database error in createCentro:', error)
+    throw new Error(`Error al crear centro: ${error.message}`)
+  }
   
   revalidatePath('/admin/centros')
   return data

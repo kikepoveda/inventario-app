@@ -35,15 +35,26 @@ export async function analyzeInventoryImage(base64Image: string) {
 
     const response = await result.response
     const text = response.text()
+    console.log('AI Vision Raw Response:', text)
     
-    // Extraer JSON del texto (a veces Gemini añade backticks)
+    // Extraer JSON del texto (a veces Gemini añade backticks o explicaciones)
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0])
+      try {
+        return JSON.parse(jsonMatch[0])
+      } catch (parseError) {
+        console.error('JSON Parse error in vision:', parseError)
+        throw new Error('La IA devolvió un formato inválido')
+      }
     }
     
+    throw new Error('No se pudo identificar información estructurada en la imagen')
+    
   } catch (error: unknown) {
-    console.error('Error in AI Vision:', error)
+    console.error('Error in analyzeInventoryImage:', error)
+    if (error instanceof Error && error.message.includes('API_KEY')) {
+      throw new Error('Configuración incompleta: GEMINI_API_KEY no válida o ausente')
+    }
     throw new Error('Error al analizar la imagen: ' + (error instanceof Error ? error.message : 'Error desconocido'))
   }
 }

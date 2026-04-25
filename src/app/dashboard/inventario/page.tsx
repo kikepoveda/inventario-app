@@ -34,8 +34,12 @@ export default function InventarioPage() {
   }
 
   const loadAulas = async () => {
-    const data = await getAulas()
-    setAulas(data)
+    try {
+      const data = await getAulas()
+      setAulas(data)
+    } catch (err: unknown) {
+      console.error('Error loading classrooms:', err)
+    }
   }
 
   useEffect(() => {

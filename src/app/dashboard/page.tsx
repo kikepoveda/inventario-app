@@ -4,15 +4,29 @@ import { ArchiveBoxIcon, AcademicCapIcon, ExclamationTriangleIcon } from '@heroi
 export default async function DashboardPage() {
   const supabase = await createClient()
   
-  // Stats
-  const { count: totalItems } = await supabase.from('inventario').select('*', { count: 'exact', head: true })
-  const { count: totalAulas } = await supabase.from('aulas').select('*', { count: 'exact', head: true })
-  const { count: lowStock } = await supabase.from('inventario').select('*', { count: 'exact', head: true }).eq('estado', 'malo')
+  // Stats con manejo de errores
+  let totalItems = 0
+  let totalAulas = 0
+  let lowStock = 0
+
+  try {
+    const [itemsRes, aulasRes, lowStockRes] = await Promise.all([
+      supabase.from('inventario').select('*', { count: 'exact', head: true }),
+      supabase.from('aulas').select('*', { count: 'exact', head: true }),
+      supabase.from('inventario').select('*', { count: 'exact', head: true }).eq('estado', 'malo')
+    ])
+
+    totalItems = itemsRes.count || 0
+    totalAulas = aulasRes.count || 0
+    lowStock = lowStockRes.count || 0
+  } catch (err) {
+    console.error('Error fetching dashboard stats:', err)
+  }
 
   const stats = [
-    { name: 'Total Ítems', value: totalItems || 0, icon: ArchiveBoxIcon },
-    { name: 'Aulas Configuradas', value: totalAulas || 0, icon: AcademicCapIcon },
-    { name: 'Estado Crítico', value: lowStock || 0, icon: ExclamationTriangleIcon },
+    { name: 'Total Ítems', value: totalItems, icon: ArchiveBoxIcon },
+    { name: 'Aulas Configuradas', value: totalAulas, icon: AcademicCapIcon },
+    { name: 'Estado Crítico', value: lowStock, icon: ExclamationTriangleIcon },
   ]
 
   return (

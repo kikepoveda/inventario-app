@@ -39,44 +39,55 @@ export default function InventarioForm() {
     if (!imageFile) return
     setAnalyzing(true)
     try {
-      const reader = new FileReader()
-      reader.onloadend = async () => {
-        const base64 = reader.result as string
-        const result = await analyzeInventoryImage(base64)
-        if (result) {
-          setFormData(prev => ({
-            ...prev,
-            nombre: result.nombre || prev.nombre,
-            marca: result.marca || prev.marca,
-            modelo: result.modelo || prev.modelo,
-            categoria: result.categoria || prev.categoria,
-            observaciones: result.descripcion_breve || prev.observaciones
-          }))
-        }
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(imageFile)
+      })
+
+      const result = await analyzeInventoryImage(base64)
+      if (result) {
+        setFormData(prev => ({
+          ...prev,
+          nombre: result.nombre || prev.nombre,
+          marca: result.marca || prev.marca,
+          modelo: result.modelo || prev.modelo,
+          categoria: result.categoria || prev.categoria,
+          observaciones: result.descripcion_breve || prev.observaciones
+        }))
       }
-      reader.readAsDataURL(imageFile)
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Error desconocido')
+      console.error('AI Analysis Error:', err)
+      alert(err instanceof Error ? err.message : 'Error al analizar la imagen')
     } finally {
       setAnalyzing(false)
     }
   }
 
   const handleUploadImage = async (file: File) => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) throw new Error('No autorizado para subir imágenes')
 
-    const { data: perfil } = await supabase.from('perfiles').select('centro_id').eq('id', user.id).single()
-    if (!perfil?.centro_id) return null
+    const { data: perfil, error: perfilError } = await supabase
+      .from('perfiles')
+      .select('centro_id')
+      .eq('id', user.id)
+      .single()
+
+    if (perfilError || !perfil?.centro_id) throw new Error('No se encontró el centro asociado')
 
     const fileExt = file.name.split('.').pop()
     const fileName = `${perfil.centro_id}/${Math.random()}.${fileExt}`
 
-    const { error } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('inventario_imagenes')
       .upload(fileName, file)
 
-    if (error) throw error
+    if (uploadError) {
+      console.error('Upload Error:', uploadError)
+      throw new Error('Error al subir la imagen al servidor')
+    }
     
     const { data: { publicUrl } } = supabase.storage
       .from('inventario_imagenes')

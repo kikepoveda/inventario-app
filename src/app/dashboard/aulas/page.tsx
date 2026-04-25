@@ -31,9 +31,13 @@ export default function AulasPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!nombre) return
-    await createAula(nombre)
-    setNombre('')
-    loadAulas()
+    try {
+      await createAula(nombre)
+      setNombre('')
+      loadAulas()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error al crear aula')
+    }
   }
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {

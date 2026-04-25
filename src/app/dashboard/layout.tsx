@@ -15,11 +15,23 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  const { data: perfil } = await supabase
-    .from('perfiles')
-    .select('*, centros(nombre)')
-    .eq('id', user.id)
-    .single()
+  // 3. Obtener perfil con manejo de errores
+  let perfil = null
+  try {
+    const { data, error } = await supabase
+      .from('perfiles')
+      .select('*, centros(nombre)')
+      .eq('id', user.id)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching profile in layout:', error)
+    } else {
+      perfil = data
+    }
+  } catch (err) {
+    console.error('Unexpected error in layout profile fetch:', err)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -15,13 +15,25 @@ export default async function AdminLayout({
     redirect('/login')
   }
 
-  const { data: perfil } = await supabase
-    .from('perfiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  // 3. Obtener perfil
+  let perfil = null
+  try {
+    const { data, error } = await supabase
+      .from('perfiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching admin profile:', error)
+    } else {
+      perfil = data
+    }
+  } catch (err) {
+    console.error('Unexpected error in admin layout:', err)
+  }
 
-  if (perfil?.role !== 'admin') {
+  if (!perfil || perfil.role !== 'admin') {
     redirect('/dashboard')
   }
 
