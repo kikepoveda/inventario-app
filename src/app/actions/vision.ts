@@ -11,10 +11,14 @@ export async function analyzeInventoryImage(base64Image: string) {
   }
 
   try {
-    console.log('--- Iniciando Análisis con Gemini Flash ---')
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash'
-    })
+    console.log('--- Iniciando Análisis con Gemini ---')
+    // Intentamos con flash-latest que suele ser más estable en versionado
+    let model;
+    try {
+      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' })
+    } catch (e) {
+      model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+    }
 
     const prompt = `
       Analiza esta imagen de un objeto de inventario y devuelve exclusivamente un objeto JSON válido con este formato:
