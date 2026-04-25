@@ -8,10 +8,24 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // 1. Crear cliente
+  let supabase
+  try {
+    supabase = await createClient()
+  } catch (err) {
+    console.error('Supabase Config Error in Admin:', err)
+    return (
+      <div className="p-10 text-center">
+        <h1 className="text-red-600 font-bold">Error de Configuración</h1>
+        <p>Configura las variables de entorno en Vercel.</p>
+      </div>
+    )
+  }
 
-  if (!user) {
+  // 2. Verificar usuario
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError || !user) {
     redirect('/login')
   }
 

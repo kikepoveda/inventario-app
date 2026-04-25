@@ -7,9 +7,13 @@ import { revalidatePath } from 'next/cache'
 async function createAdminClient() {
   const cookieStore = await cookies()
   
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('La variable SUPABASE_SERVICE_ROLE_KEY no está configurada en Vercel')
+  }
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
     {
       cookies: {
         getAll() { return cookieStore.getAll() },
