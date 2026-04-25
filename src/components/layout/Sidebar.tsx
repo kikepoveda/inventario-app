@@ -28,7 +28,7 @@ export default function Sidebar({ role, onClose }: { role?: string, onClose?: ()
   return (
     <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4 ring-1 ring-white/10 h-full border-r border-gray-200">
       <div className="flex h-16 shrink-0 items-center justify-between">
-        <span className="text-2xl font-bold text-primary-600">EduInv</span>
+        <span className="text-2xl font-bold text-primary-600">EducaInventario</span>
         {onClose && (
           <button onClick={onClose} className="lg:hidden p-2 text-gray-500">
             <XMarkIcon className="h-6 w-6" />

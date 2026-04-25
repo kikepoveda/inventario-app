@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
 import { Database } from '@/types/database'
 
@@ -8,8 +8,7 @@ type ExportItem = Database['public']['Tables']['inventario']['Row'] & {
 }
 
 export function exportToPDF(items: ExportItem[], centroNombre: string) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const doc = new jsPDF() as any
+  const doc = new jsPDF()
   
   doc.setFontSize(18)
   doc.text(`Inventario: ${centroNombre}`, 14, 22)
@@ -26,7 +25,7 @@ export function exportToPDF(items: ExportItem[], centroNombre: string) {
     item.unidades
   ])
 
-  doc.autoTable({
+  autoTable(doc, {
     head: [['Código', 'Nombre', 'Categoría', 'Aula', 'Estado', 'Unids']],
     body: tableRows,
     startY: 35,

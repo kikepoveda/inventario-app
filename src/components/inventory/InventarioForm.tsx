@@ -38,6 +38,13 @@ export default function InventarioForm() {
     setFormData(prev => ({ ...prev, codigo: randomCode }))
   }, [])
 
+  // Efecto para análisis automático si se sube una imagen (especialmente desde cámara)
+  useEffect(() => {
+    if (imageFile) {
+      handleAIAnalysis()
+    }
+  }, [imageFile])
+
   const handleAIAnalysis = async () => {
     if (!imageFile) return
     setAnalyzing(true)

@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "EduInv - Gestión de Inventario Escolar",
+  title: "EducaInventario - Gestión de Inventario Escolar",
   description: "Sistema de gestión de inventario para centros educativos",
 };
 
