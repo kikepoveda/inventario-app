@@ -5,12 +5,14 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
 export async function analyzeInventoryImage(base64Image: string) {
+  // Verificación básica
   if (!process.env.GEMINI_API_KEY) {
-    console.error('CRITICAL: GEMINI_API_KEY is not set')
-    throw new Error('Configuración de IA incompleta')
+    console.error('ERROR: GEMINI_API_KEY no configurada')
+    return { success: false, error: 'Configuración de IA incompleta' }
   }
 
   try {
+    console.log('Iniciando llamada a Gemini Flash...')
     const model = genAI.getGenerativeModel({ 
       model: 'gemini-1.5-flash',
       generationConfig: {
@@ -29,7 +31,8 @@ export async function analyzeInventoryImage(base64Image: string) {
       }
     `
 
-    const imageData = base64Image.split(',')[1] || base64Image
+    // Limpiar base64
+    const imageData = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image
 
     const result = await model.generateContent([
       prompt,
@@ -43,12 +46,16 @@ export async function analyzeInventoryImage(base64Image: string) {
 
     const response = await result.response
     const text = response.text()
-    console.log('Gemini Response:', text)
+    console.log('Gemini raw response:', text)
     
-    return JSON.parse(text)
+    const data = JSON.parse(text)
+    return { success: true, data }
     
-  } catch (error: unknown) {
-    console.error('Error in analyzeInventoryImage:', error)
-    throw error
+  } catch (error: any) {
+    console.error('Error detallado en analyzeInventoryImage:', error)
+    return { 
+      success: false, 
+      error: error.message || 'Error desconocido al analizar la imagen' 
+    }
   }
 }

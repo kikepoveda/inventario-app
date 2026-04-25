@@ -118,16 +118,20 @@ export default function InventarioForm() {
 
       // 5. Esperar resultado de IA si aún no ha terminado
       const result = await aiPromise
-      if (result) {
-        console.log('Datos recibidos de IA:', result)
+      
+      if (result && result.success) {
+        const aiData = result.data
+        console.log('Datos recibidos de IA:', aiData)
         setFormData(prev => ({
           ...prev,
-          nombre: result.nombre || prev.nombre,
-          marca: result.marca || prev.marca,
-          modelo: result.modelo || prev.modelo,
-          categoria: result.categoria || prev.categoria,
-          observaciones: result.descripcion_breve || prev.observaciones
+          nombre: aiData.nombre || prev.nombre,
+          marca: aiData.marca || prev.marca,
+          modelo: aiData.modelo || prev.modelo,
+          categoria: aiData.categoria || prev.categoria,
+          observaciones: aiData.descripcion_breve || prev.observaciones
         }))
+      } else {
+        console.error('La IA no pudo procesar la imagen:', result?.error)
       }
     } catch (err: any) {
       console.error('Error en proceso de imagen:', err)
