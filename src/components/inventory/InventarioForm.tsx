@@ -84,7 +84,7 @@ export default function InventarioForm() {
 
       // 2. Subir imagen a Supabase Storage
       const fileExt = file.name ? file.name.split('.').pop() : 'jpg'
-      const fileName = `imagenes/${perfil.centro_id}-${Date.now()}.${fileExt}`
+      const fileName = `${perfil.centro_id}/${Date.now()}.${fileExt}`
       
       console.log('Iniciando subida a Supabase:', fileName)
       const { error: uploadError } = await supabase.storage
