@@ -32,14 +32,14 @@ export async function getInventario() {
 export async function createInventarioItem(item: Omit<InventarioInsert, 'centro_id'>) {
   const supabase = await createClient()
   
-  // 1. Verificar autenticación de forma segura
+  // 1. Verificar autenticación
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     console.error('Auth error in createInventarioItem:', authError)
     throw new Error('No autorizado: Debes iniciar sesión')
   }
 
-  // 2. Obtener centro_id del perfil del usuario
+  // 2. Obtener centro_id (CRÍTICO para RLS)
   const { data: perfil, error: perfilError } = await supabase
     .from('perfiles')
     .select('centro_id')
@@ -48,10 +48,16 @@ export async function createInventarioItem(item: Omit<InventarioInsert, 'centro_
 
   if (perfilError || !perfil?.centro_id) {
     console.error('Perfil error in createInventarioItem:', perfilError)
-    throw new Error('Error de configuración: No se encontró el centro asociado a tu usuario')
+    throw new Error('No se encontró el centro asociado a tu usuario. Contacta con el administrador.')
   }
 
-  // 3. Insertar con centro_id explícito
+  // 3. Validación de datos mínimos
+  if (!item.codigo || !item.nombre) {
+    throw new Error('Código y Nombre son campos obligatorios')
+  }
+
+  // 4. Insertar con centro_id explícito
+  console.log('Creating inventory item:', item.codigo, 'for centro:', perfil.centro_id)
   const { data, error } = await supabase
     .from('inventario')
     .insert({ 
@@ -63,9 +69,11 @@ export async function createInventarioItem(item: Omit<InventarioInsert, 'centro_
 
   if (error) {
     console.error('Database error in createInventarioItem:', error)
-    throw new Error(`Error al crear item: ${error.message}`)
+    if (error.code === '23505') throw new Error('Ya existe un ítem con este código en este centro')
+    throw new Error(`Error al crear ítem: ${error.message}`)
   }
   
+  console.log('Inventory item created successfully:', data.id)
   revalidatePath('/dashboard/inventario')
   return data
 }

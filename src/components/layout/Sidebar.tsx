@@ -14,7 +14,6 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'Inventario', href: '/dashboard/inventario', icon: ArchiveBoxIcon },
   { name: 'Aulas', href: '/dashboard/aulas', icon: AcademicCapIcon },
-  { name: 'Configuración', href: '/dashboard/configuracion', icon: Cog6ToothIcon },
 ]
 
 const adminNavigation = [

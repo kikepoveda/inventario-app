@@ -33,10 +33,22 @@ export default function AulasPage() {
     if (!nombre) return
     try {
       await createAula(nombre)
+      alert('Aula creada correctamente')
       setNombre('')
       loadAulas()
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Error al crear aula')
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro de eliminar esta aula? Se borrarán los datos asociados.')) return
+    try {
+      await deleteAula(id)
+      alert('Aula eliminada')
+      loadAulas()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Error al eliminar')
     }
   }
 
@@ -49,6 +61,7 @@ export default function AulasPage() {
     
     try {
       await importAulasCSV(formData)
+      alert('Aulas importadas correctamente')
       loadAulas()
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : 'Error desconocido')
@@ -106,7 +119,7 @@ export default function AulasPage() {
                 <tr key={aula.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{aula.nombre}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button onClick={() => deleteAula(aula.id).then(loadAulas)} className="text-red-600 hover:text-red-900">
+                    <button onClick={() => handleDelete(aula.id)} className="text-red-600 hover:text-red-900">
                       <TrashIcon className="h-5 w-5" />
                     </button>
                   </td>

@@ -32,10 +32,10 @@ export async function createAula(nombre: string) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     console.error('Auth error in createAula:', authError)
-    throw new Error('No autorizado')
+    throw new Error('No autorizado: Debes iniciar sesión')
   }
 
-  // 2. Obtener centro_id
+  // 2. Obtener centro_id del perfil del usuario (CRÍTICO para RLS)
   const { data: perfil, error: perfilError } = await supabase
     .from('perfiles')
     .select('centro_id')
@@ -44,13 +44,22 @@ export async function createAula(nombre: string) {
 
   if (perfilError || !perfil?.centro_id) {
     console.error('Perfil error in createAula:', perfilError)
-    throw new Error('No se encontró el centro del usuario')
+    throw new Error('Error de configuración: No se encontró un centro asociado a tu usuario. Contacta con el administrador.')
   }
 
-  // 3. Insertar
+  // 3. Validación de datos
+  if (!nombre || nombre.trim().length < 2) {
+    throw new Error('El nombre del aula debe tener al menos 2 caracteres')
+  }
+
+  // 4. Insertar con centro_id explícito
+  console.log('Creating aula:', nombre, 'for centro:', perfil.centro_id)
   const { data, error } = await supabase
     .from('aulas')
-    .insert({ nombre, centro_id: perfil.centro_id })
+    .insert({ 
+      nombre: nombre.trim(), 
+      centro_id: perfil.centro_id 
+    })
     .select()
     .single()
 
@@ -59,6 +68,7 @@ export async function createAula(nombre: string) {
     throw new Error(`Error al crear aula: ${error.message}`)
   }
   
+  console.log('Aula created successfully:', data.id)
   revalidatePath('/dashboard/aulas')
   revalidatePath('/dashboard/configuracion')
   return data

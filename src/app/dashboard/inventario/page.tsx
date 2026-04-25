@@ -65,9 +65,13 @@ export default function InventarioPage() {
   }, [])
 
   const handleDelete = async (id: string) => {
-    if (confirm('¿Estás seguro de eliminar este ítem?')) {
+    if (!confirm('¿Estás seguro de eliminar este ítem?')) return
+    try {
       await deleteInventarioItem(id)
+      alert('Ítem eliminado correctamente')
       loadInventario()
+    } catch (err: any) {
+      alert(err.message)
     }
   }
 
