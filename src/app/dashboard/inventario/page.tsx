@@ -13,6 +13,8 @@ type InventarioItem = Database['public']['Tables']['inventario']['Row'] & {
   aulas: { nombre: string } | null
 }
 
+export const dynamic = 'force-dynamic'
+
 export default function InventarioPage() {
   const [items, setItems] = useState<InventarioItem[]>([])
   const [aulas, setAulas] = useState<Database['public']['Tables']['aulas']['Row'][]>([])

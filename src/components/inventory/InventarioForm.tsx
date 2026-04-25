@@ -120,24 +120,53 @@ export default function InventarioForm() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Imagen</label>
-            <div className="mt-1 flex items-center gap-4">
-              <input
-                type="file"
-                accept="image/*"
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
-                onChange={e => setImageFile(e.target.files?.[0] || null)}
-              />
-              {imageFile && (
+            <label className="block text-sm font-medium text-gray-700">Imagen / Cámara</label>
+            <div className="mt-1 flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="image-upload"
+                  className="hidden"
+                  onChange={e => setImageFile(e.target.files?.[0] || null)}
+                />
                 <button
                   type="button"
-                  onClick={handleAIAnalysis}
-                  disabled={analyzing}
-                  className="btn bg-purple-600 hover:bg-purple-700 text-white shadow-sm whitespace-nowrap"
+                  onClick={() => document.getElementById('image-upload')?.click()}
+                  className="btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex-1"
                 >
-                  <SparklesIcon className="h-4 w-4 mr-1" />
-                  {analyzing ? 'Analizando...' : 'Autocompletar con IA'}
+                  Subir Archivo
                 </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  id="camera-capture"
+                  className="hidden"
+                  onChange={e => setImageFile(e.target.files?.[0] || null)}
+                />
+                <button
+                  type="button"
+                  onClick={() => document.getElementById('camera-capture')?.click()}
+                  className="btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex-1"
+                >
+                  Hacer Foto
+                </button>
+              </div>
+
+              {imageFile && (
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded-md border border-gray-200">
+                  <span className="text-xs text-gray-500 truncate max-w-[150px]">{imageFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={handleAIAnalysis}
+                    disabled={analyzing}
+                    className="btn bg-purple-600 hover:bg-purple-700 text-white text-xs py-1 px-3 shadow-sm"
+                  >
+                    <SparklesIcon className="h-3 w-3 mr-1" />
+                    {analyzing ? 'Analizando...' : 'IA Autocompletar'}
+                  </button>
+                </div>
               )}
             </div>
           </div>

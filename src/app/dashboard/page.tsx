@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { ArchiveBoxIcon, AcademicCapIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 
+export const dynamic = 'force-dynamic'
+
 export default async function DashboardPage() {
   const supabase = await createClient()
   

@@ -1,5 +1,7 @@
 import InventarioForm from '@/components/inventory/InventarioForm'
 
+export const dynamic = 'force-dynamic'
+
 export default function NuevoInventarioPage() {
   return (
     <div className="space-y-6">

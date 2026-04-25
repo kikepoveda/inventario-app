@@ -19,6 +19,7 @@ const navigation = [
 
 const adminNavigation = [
   { name: 'Centros', href: '/admin/centros', icon: BuildingOfficeIcon },
+  { name: 'Usuarios', href: '/admin/usuarios', icon: Cog6ToothIcon },
 ]
 
 export default function Sidebar({ role }: { role?: string }) {
