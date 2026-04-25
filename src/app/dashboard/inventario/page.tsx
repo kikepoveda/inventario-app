@@ -117,8 +117,8 @@ export default function InventarioPage() {
       </div>
 
       {/* Filtros */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="relative md:col-span-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+        <div className="relative sm:col-span-2 lg:col-span-1">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
             <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
           </div>
@@ -165,59 +165,102 @@ export default function InventarioPage() {
         )}
       </div>
 
-      <div className="overflow-hidden bg-white shadow sm:rounded-lg border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-300">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">QR</th>
-              <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Código</th>
-              <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Nombre</th>
-              <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Centro</th>
-              <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Aula</th>
-              <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Estado</th>
-              <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {loading ? (
-              <tr><td colSpan={6} className="text-center py-4">Cargando...</td></tr>
-            ) : filteredItems.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-4">No se encontraron ítems.</td></tr>
-            ) : filteredItems.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50">
-                <td className="px-3 py-4 text-sm">
-                  <button onClick={() => setSelectedQR({codigo: item.codigo, nombre: item.nombre})} className="text-gray-400 hover:text-primary-600">
-                    <QrCodeIcon className="h-6 w-6" />
-                  </button>
-                </td>
-                <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">{item.codigo}</td>
-                <td className="px-3 py-4 text-sm text-gray-500">
-                  <div className="font-medium text-gray-900">{item.nombre}</div>
-                  <div className="text-xs text-gray-400">{item.marca} {item.modelo}</div>
-                </td>
-                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.centros?.nombre || '-'}</td>
-                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.aulas?.nombre || 'Sin aula'}</td>
-                <td className="whitespace-nowrap px-3 py-4 text-sm">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    item.estado === 'bueno' ? 'bg-green-100 text-green-800' :
-                    item.estado === 'regular' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {item.estado}
-                  </span>
-                </td>
-                <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                  <Link href={`/dashboard/inventario/editar/${item.id}`} className="text-primary-600 hover:text-primary-900 mr-4">
-                    Editar
-                  </Link>
-                  <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-900">
-                    Eliminar
-                  </button>
-                </td>
+      {/* Mobile Cards (Visible only on mobile) */}
+      <div className="grid grid-cols-1 gap-4 sm:hidden">
+        {loading ? (
+          <div className="text-center py-4">Cargando...</div>
+        ) : filteredItems.map((item) => (
+          <div key={item.id} className="bg-white p-4 rounded-lg shadow border border-gray-200 space-y-3">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-bold text-gray-900">{item.nombre}</h3>
+                <p className="text-xs text-gray-500">{item.codigo} • {item.marca || 'S/M'}</p>
+              </div>
+              <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
+                item.estado === 'bueno' ? 'bg-green-100 text-green-800' :
+                item.estado === 'regular' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+              }`}>
+                {item.estado}
+              </span>
+            </div>
+            <div className="text-sm text-gray-600">
+              <p><span className="font-medium">Aula:</span> {item.aulas?.nombre || 'Sin aula'}</p>
+              <p><span className="font-medium">Centro:</span> {item.centros?.nombre || '-'}</p>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+              <button onClick={() => setSelectedQR({codigo: item.codigo, nombre: item.nombre})} className="p-2 text-gray-400">
+                <QrCodeIcon className="h-6 w-6" />
+              </button>
+              <div className="flex gap-4">
+                <Link href={`/dashboard/inventario/editar/${item.id}`} className="text-primary-600 font-medium">
+                  Editar
+                </Link>
+                <button onClick={() => handleDelete(item.id)} className="text-red-600 font-medium">
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table (Visible only from sm up) */}
+      <div className="hidden sm:block overflow-hidden bg-white shadow rounded-lg border border-gray-200">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-300">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">QR</th>
+                <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Código</th>
+                <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Nombre</th>
+                <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Centro</th>
+                <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Aula</th>
+                <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Estado</th>
+                <th className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 text-right">Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-200 bg-white">
+              {loading ? (
+                <tr><td colSpan={7} className="text-center py-4">Cargando...</td></tr>
+              ) : filteredItems.length === 0 ? (
+                <tr><td colSpan={7} className="text-center py-4">No se encontraron ítems.</td></tr>
+              ) : filteredItems.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="px-3 py-4 text-sm">
+                    <button onClick={() => setSelectedQR({codigo: item.codigo, nombre: item.nombre})} className="text-gray-400 hover:text-primary-600">
+                      <QrCodeIcon className="h-6 w-6" />
+                    </button>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">{item.codigo}</td>
+                  <td className="px-3 py-4 text-sm text-gray-500">
+                    <div className="font-medium text-gray-900">{item.nombre}</div>
+                    <div className="text-xs text-gray-400">{item.marca} {item.modelo}</div>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.centros?.nombre || '-'}</td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{item.aulas?.nombre || 'Sin aula'}</td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      item.estado === 'bueno' ? 'bg-green-100 text-green-800' :
+                      item.estado === 'regular' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {item.estado}
+                    </span>
+                  </td>
+                  <td className="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                    <Link href={`/dashboard/inventario/editar/${item.id}`} className="text-primary-600 hover:text-primary-900 mr-4">
+                      Editar
+                    </Link>
+                    <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-900">
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal QR */}

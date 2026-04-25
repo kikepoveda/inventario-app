@@ -119,13 +119,13 @@ export default function InventarioForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow border border-gray-200">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto bg-white p-4 sm:p-8 rounded-lg shadow border border-gray-200">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Imagen / Cámara</label>
-            <div className="mt-1 flex flex-col gap-4">
-              <div className="flex items-center gap-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Imagen / Cámara</label>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2">
                 <input
                   type="file"
                   accept="image/*"
@@ -136,9 +136,9 @@ export default function InventarioForm() {
                 <button
                   type="button"
                   onClick={() => document.getElementById('image-upload')?.click()}
-                  className="btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex-1"
+                  className="btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex-1 py-2.5"
                 >
-                  Subir Archivo
+                  Subir
                 </button>
                 <input
                   type="file"
@@ -151,59 +151,63 @@ export default function InventarioForm() {
                 <button
                   type="button"
                   onClick={() => document.getElementById('camera-capture')?.click()}
-                  className="btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex-1"
+                  className="btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 flex-1 py-2.5"
                 >
-                  Hacer Foto
+                  Cámara
                 </button>
               </div>
 
               {imageFile && (
-                <div className="flex items-center justify-between p-2 bg-gray-50 rounded-md border border-gray-200">
-                  <span className="text-xs text-gray-500 truncate max-w-[150px]">{imageFile.name}</span>
+                <div className="flex items-center justify-between p-2.5 bg-purple-50 rounded-md border border-purple-100">
+                  <span className="text-xs text-purple-700 truncate max-w-[120px]">{imageFile.name}</span>
                   <button
                     type="button"
                     onClick={handleAIAnalysis}
                     disabled={analyzing}
-                    className="btn bg-purple-600 hover:bg-purple-700 text-white text-xs py-1 px-3 shadow-sm"
+                    className="btn bg-purple-600 hover:bg-purple-700 text-white text-xs py-1.5 px-3 shadow-sm"
                   >
-                    <SparklesIcon className="h-3 w-3 mr-1" />
-                    {analyzing ? 'Analizando...' : 'IA Autocompletar'}
+                    <SparklesIcon className="h-3.5 w-3.5 mr-1" />
+                    {analyzing ? 'Analizando...' : 'Auto-IA'}
                   </button>
                 </div>
               )}
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Código *</label>
-            <input
-              required
-              className="input mt-1"
-              value={formData.codigo}
-              onChange={e => setFormData({...formData, codigo: e.target.value})}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Producto *</label>
-            <input
-              required
-              className="input mt-1"
-              value={formData.nombre}
-              onChange={e => setFormData({...formData, nombre: e.target.value})}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Marca</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Código *</label>
               <input
-                className="input mt-1"
+                required
+                className="input w-full"
+                value={formData.codigo}
+                onChange={e => setFormData({...formData, codigo: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Producto *</label>
+              <input
+                required
+                className="input w-full"
+                value={formData.nombre}
+                onChange={e => setFormData({...formData, nombre: e.target.value})}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+              <input
+                className="input w-full"
                 value={formData.marca || ''}
                 onChange={e => setFormData({...formData, marca: e.target.value})}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Modelo</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Modelo</label>
               <input
-                className="input mt-1"
+                className="input w-full"
                 value={formData.modelo || ''}
                 onChange={e => setFormData({...formData, modelo: e.target.value})}
               />
@@ -212,26 +216,29 @@ export default function InventarioForm() {
         </div>
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Número de Serie</label>
-            <input
-              className="input mt-1"
-              value={formData.numero_serie || ''}
-              onChange={e => setFormData({...formData, numero_serie: e.target.value})}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nº Serie</label>
+              <input
+                className="input w-full"
+                value={formData.numero_serie || ''}
+                onChange={e => setFormData({...formData, numero_serie: e.target.value})}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+              <input
+                className="input w-full"
+                value={formData.categoria || ''}
+                onChange={e => setFormData({...formData, categoria: e.target.value})}
+              />
+            </div>
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700">Categoría</label>
-            <input
-              className="input mt-1"
-              value={formData.categoria || ''}
-              onChange={e => setFormData({...formData, categoria: e.target.value})}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Ubicación (Aula)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Ubicación (Aula)</label>
             <select
-              className="input mt-1"
+              className="input w-full"
               value={formData.aula_id || ''}
               onChange={e => setFormData({...formData, aula_id: e.target.value || null})}
             >
@@ -241,21 +248,22 @@ export default function InventarioForm() {
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Unidades</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Unidades</label>
               <input
                 type="number"
                 min="1"
-                className="input mt-1"
+                className="input w-full"
                 value={formData.unidades}
                 onChange={e => setFormData({...formData, unidades: parseInt(e.target.value)})}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Estado</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
               <select
-                className="input mt-1"
+                className="input w-full"
                 value={formData.estado}
                 onChange={e => setFormData({...formData, estado: e.target.value as Database['public']['Enums']['inventory_status']})}
               >
@@ -270,18 +278,20 @@ export default function InventarioForm() {
       </div>
 
       <div className="mt-6">
-        <label className="block text-sm font-medium text-gray-700">Observaciones</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
         <textarea
           rows={3}
-          className="input mt-1"
+          className="input w-full"
           value={formData.observaciones || ''}
           onChange={e => setFormData({...formData, observaciones: e.target.value})}
         />
       </div>
 
-      <div className="mt-8 flex justify-end gap-4">
-        <button type="button" onClick={() => router.back()} className="btn border-gray-300 bg-white text-gray-700">Cancelar</button>
-        <button type="submit" disabled={loading} className="btn btn-primary">
+      <div className="mt-8 flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4">
+        <button type="button" onClick={() => router.back()} className="btn border-gray-300 bg-white text-gray-700 py-2.5">
+          Cancelar
+        </button>
+        <button type="submit" disabled={loading} className="btn btn-primary py-2.5 px-8">
           {loading ? 'Guardando...' : 'Guardar Ítem'}
         </button>
       </div>

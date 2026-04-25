@@ -86,19 +86,19 @@ export default function AulasPage() {
         <p className="mt-1 text-sm text-gray-500">Configura los espacios físicos de tu centro.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Formulario Crear */}
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+        <div className="bg-white p-6 rounded-lg shadow border border-gray-200 order-1 lg:order-1">
           <h3 className="text-lg font-medium mb-4">Nueva Aula</h3>
           <form onSubmit={handleCreate} className="space-y-4">
             <input
               type="text"
               placeholder="Ej: Aula 102, Laboratorio..."
-              className="input"
+              className="input w-full"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
             />
-            <button type="submit" className="btn btn-primary w-full">Crear Aula</button>
+            <button type="submit" className="btn btn-primary w-full py-2.5">Crear Aula</button>
           </form>
 
           <div className="mt-8 pt-8 border-t border-gray-100">
@@ -112,7 +112,7 @@ export default function AulasPage() {
               </button>
             </div>
             <p className="text-xs text-gray-500 mb-4">Sube un archivo .csv con un nombre de aula por línea.</p>
-            <label className="btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 w-full cursor-pointer">
+            <label className="btn border-gray-300 bg-white text-gray-700 hover:bg-gray-50 w-full cursor-pointer py-2.5">
               <CloudArrowUpIcon className="h-5 w-5 mr-2" />
               Seleccionar Archivo
               <input type="file" accept=".csv" className="hidden" onChange={handleImport} />
@@ -121,31 +121,52 @@ export default function AulasPage() {
         </div>
 
         {/* Listado */}
-        <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr><td colSpan={2} className="px-6 py-4 text-center">Cargando...</td></tr>
-              ) : aulas.length === 0 ? (
-                <tr><td colSpan={2} className="px-6 py-4 text-center text-gray-400">Sin aulas configuradas</td></tr>
-              ) : aulas.map((aula) => (
-                <tr key={aula.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{aula.nombre}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button onClick={() => handleDelete(aula.id)} className="text-red-600 hover:text-red-900">
-                      <TrashIcon className="h-5 w-5" />
-                    </button>
-                  </td>
+        <div className="order-2 lg:order-2 space-y-4">
+          <h3 className="text-lg font-medium lg:hidden px-1">Listado de Aulas</h3>
+          
+          {/* Mobile Cards */}
+          <div className="grid grid-cols-1 gap-2 sm:hidden">
+            {loading ? (
+              <div className="text-center py-4">Cargando...</div>
+            ) : aulas.length === 0 ? (
+              <div className="text-center py-4 text-gray-400">Sin aulas configuradas</div>
+            ) : aulas.map((aula) => (
+              <div key={aula.id} className="bg-white p-4 rounded-lg shadow border border-gray-200 flex justify-between items-center">
+                <span className="font-medium text-gray-900">{aula.nombre}</span>
+                <button onClick={() => handleDelete(aula.id)} className="p-2 text-red-600">
+                  <TrashIcon className="h-5 w-5" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden sm:block bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {loading ? (
+                  <tr><td colSpan={2} className="px-6 py-4 text-center">Cargando...</td></tr>
+                ) : aulas.length === 0 ? (
+                  <tr><td colSpan={2} className="px-6 py-4 text-center text-gray-400">Sin aulas configuradas</td></tr>
+                ) : aulas.map((aula) => (
+                  <tr key={aula.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{aula.nombre}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <button onClick={() => handleDelete(aula.id)} className="text-red-600 hover:text-red-900">
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

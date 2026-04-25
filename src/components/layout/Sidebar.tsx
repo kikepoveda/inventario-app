@@ -7,7 +7,8 @@ import {
   ArchiveBoxIcon, 
   AcademicCapIcon, 
   BuildingOfficeIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 
 const navigation = [
@@ -21,13 +22,18 @@ const adminNavigation = [
   { name: 'Usuarios', href: '/admin/usuarios', icon: Cog6ToothIcon },
 ]
 
-export default function Sidebar({ role }: { role?: string }) {
+export default function Sidebar({ role, onClose }: { role?: string, onClose?: () => void }) {
   const pathname = usePathname()
 
   return (
-    <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6">
-      <div className="flex h-16 shrink-0 items-center">
+    <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4 ring-1 ring-white/10 h-full border-r border-gray-200">
+      <div className="flex h-16 shrink-0 items-center justify-between">
         <span className="text-2xl font-bold text-primary-600">EduInv</span>
+        {onClose && (
+          <button onClick={onClose} className="lg:hidden p-2 text-gray-500">
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        )}
       </div>
       <nav className="flex flex-1 flex-col">
         <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -37,6 +43,7 @@ export default function Sidebar({ role }: { role?: string }) {
                 <li key={item.name}>
                   <Link
                     href={item.href}
+                    onClick={() => onClose?.()}
                     className={`
                       group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold
                       ${pathname === item.href 

@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Sidebar from '@/components/layout/Sidebar'
-import Header from '@/components/layout/Header'
+import DashboardShell from '@/components/layout/DashboardShell'
 
 export default async function DashboardLayout({
   children,
@@ -29,7 +28,7 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  // 3. Obtener perfil (Primero sin JOIN para evitar bloqueos de RLS circulares)
+  // 3. Obtener perfil
   let perfil = null
   let centro = null
   
@@ -45,7 +44,6 @@ export default async function DashboardLayout({
     } else if (perfilData) {
       perfil = perfilData
       
-      // 3.1. Si tiene centro, obtenerlo aparte
       if (perfil.centro_id) {
         const { data: centroData } = await supabase
           .from('centros')
@@ -64,7 +62,6 @@ export default async function DashboardLayout({
     const isAdminEmail = user.email?.toLowerCase() === 'kike.poveda@gmail.com'
     
     if (isAdminEmail) {
-      // Forzar visualización como admin provisional si es el correo del dueño
       perfil = { role: 'admin', nombre: 'Kike (Admin)', centro_id: null }
     } else {
       return (
@@ -72,9 +69,6 @@ export default async function DashboardLayout({
           <h2 className="text-xl font-bold text-gray-900">Perfil Incompleto</h2>
           <p className="mt-2 text-gray-600">
             Tu usuario (<span className="font-semibold">{user.email}</span>) no tiene un perfil configurado.
-          </p>
-          <p className="mt-1 text-sm text-gray-500 italic">
-            ID: {user.id}
           </p>
           <div className="mt-6 flex gap-4">
             <a href="/dashboard" className="btn btn-primary">Reintentar</a>
@@ -86,22 +80,12 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <Sidebar role={perfil.role} />
-      </div>
-
-      <div className="lg:pl-72">
-        <Header 
-          userEmail={user.email} 
-          centroNombre={centro?.nombre || 'Sin centro asignado'} 
-        />
-        <main className="py-10">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            {children}
-          </div>
-        </main>
-      </div>
-    </div>
+    <DashboardShell 
+      userEmail={user.email} 
+      centroNombre={centro?.nombre || 'Sin centro asignado'} 
+      role={perfil.role}
+    >
+      {children}
+    </DashboardShell>
   )
 }

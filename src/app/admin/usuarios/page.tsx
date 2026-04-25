@@ -59,12 +59,12 @@ export default function UsuariosPage() {
 
       <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
         <h3 className="text-lg font-medium mb-4">Crear Nuevo Usuario</h3>
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <input
             required
             type="email"
             placeholder="Email"
-            className="input"
+            className="input w-full"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -72,74 +72,96 @@ export default function UsuariosPage() {
             required
             type="text"
             placeholder="Nombre Completo"
-            className="input"
+            className="input w-full"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
           />
           <input
             required
             type="password"
-            placeholder="Contraseña (mín. 6 caracteres)"
-            className="input"
+            placeholder="Contraseña (mín. 6)"
+            className="input w-full"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             minLength={6}
           />
-          <select 
-            className="input"
-            value={role}
-            onChange={(e) => setRole(e.target.value as any)}
-          >
-            <option value="centro">Gestor de Centro</option>
-            <option value="admin">Administrador Global</option>
-          </select>
-          {role === 'centro' && (
+          <div className="grid grid-cols-1 gap-4 sm:flex sm:gap-4">
             <select 
-              className="input"
-              value={centroId}
-              onChange={(e) => setCentroId(e.target.value)}
-              required
+              className="input flex-1"
+              value={role}
+              onChange={(e) => setRole(e.target.value as any)}
             >
-              <option value="">Asignar a Centro...</option>
-              {centros.map(c => (
-                <option key={c.id} value={c.id}>{c.nombre}</option>
-              ))}
+              <option value="centro">Gestor Centro</option>
+              <option value="admin">Admin Global</option>
             </select>
-          )}
-          <button type="submit" disabled={loading} className="btn btn-primary md:col-span-2">
+            {role === 'centro' && (
+              <select 
+                className="input flex-1"
+                value={centroId}
+                onChange={(e) => setCentroId(e.target.value)}
+                required
+              >
+                <option value="">Asignar Centro...</option>
+                {centros.map(c => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          <button type="submit" disabled={loading} className="btn btn-primary sm:col-span-2 py-2.5">
             {loading ? 'Creando...' : 'Crear Usuario'}
           </button>
         </form>
       </div>
 
-      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nombre</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rol</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Centro</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {usuarios.map((u) => (
-              <tr key={u.id}>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{u.nombre}</td>
-                <td className="px-6 py-4 text-sm text-gray-500 capitalize">{u.role}</td>
-                <td className="px-6 py-4 text-sm text-gray-500">{u.centros?.nombre || '-'}</td>
-                <td className="px-6 py-4 text-sm text-right">
-                  <button 
-                    onClick={() => handleDelete(u.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
-                </td>
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium sm:hidden px-1">Usuarios</h3>
+        
+        {/* Mobile Cards */}
+        <div className="grid grid-cols-1 gap-2 sm:hidden">
+          {usuarios.map((u) => (
+            <div key={u.id} className="bg-white p-4 rounded-lg shadow border border-gray-200 flex justify-between items-start">
+              <div>
+                <p className="font-bold text-gray-900">{u.nombre}</p>
+                <p className="text-xs text-gray-500 capitalize">{u.role} • {u.centros?.nombre || '-'}</p>
+              </div>
+              <button onClick={() => handleDelete(u.id)} className="p-2 text-red-600">
+                <TrashIcon className="h-5 w-5" />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden sm:block bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Centro</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {usuarios.map((u) => (
+                <tr key={u.id}>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{u.nombre}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500 capitalize">{u.role}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{u.centros?.nombre || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-right">
+                    <button 
+                      onClick={() => handleDelete(u.id)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
