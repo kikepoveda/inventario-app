@@ -32,7 +32,21 @@ async function createAdminClient() {
 export async function inviteUser(email: string, nombre: string, role: 'admin' | 'centro', centro_id?: string) {
   const supabaseAdmin = await createAdminClient()
   
-  // 1. Crear usuario en Auth
+  // 1. Verificar permisos (Bypass para el dueño)
+  const { data: { user } } = await supabaseAdmin.auth.getUser()
+  const isAdminEmail = user?.email?.toLowerCase() === 'kike.poveda@gmail.com'
+  
+  if (!isAdminEmail) {
+    const { data: perfil } = await supabaseAdmin
+      .from('perfiles')
+      .select('role')
+      .eq('id', user?.id)
+      .single()
+    
+    if (perfil?.role !== 'admin') throw new Error('No autorizado')
+  }
+
+  // 2. Crear usuario en Auth
   const { data: userData, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email,
     password: 'password123', // Contraseña temporal

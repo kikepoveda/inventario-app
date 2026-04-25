@@ -30,14 +30,18 @@ export async function createCentro(nombre: string) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) throw new Error('No autorizado')
 
-  const { data: perfil, error: perfilError } = await supabase
-    .from('perfiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-  
-  if (perfilError || perfil?.role !== 'admin') {
-    throw new Error('No tienes permisos de administrador global')
+  const isAdminEmail = user.email?.toLowerCase() === 'kike.poveda@gmail.com'
+
+  if (!isAdminEmail) {
+    const { data: perfil, error: perfilError } = await supabase
+      .from('perfiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    
+    if (perfilError || perfil?.role !== 'admin') {
+      throw new Error('No tienes permisos de administrador global')
+    }
   }
 
   // 2. Insertar

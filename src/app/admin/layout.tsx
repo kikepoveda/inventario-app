@@ -47,7 +47,10 @@ export default async function AdminLayout({
     console.error('Unexpected error in admin layout:', err)
   }
 
-  if (!perfil || perfil.role !== 'admin') {
+  // 4. Protección y Bypass de Admin
+  const isAdminEmail = user.email?.toLowerCase() === 'kike.poveda@gmail.com'
+
+  if (!isAdminEmail && (!perfil || perfil.role !== 'admin')) {
     redirect('/dashboard')
   }
 
