@@ -41,14 +41,41 @@ export default function InventarioForm() {
   const handleAIAnalysis = useCallback(async (file: File) => {
     setAnalyzing(true)
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
+      // 1. Redimensionar imagen para evitar límites de tamaño de Server Actions (1MB)
+      const resizedBase64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as string)
+        reader.onload = (e) => {
+          const img = new Image()
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            let width = img.width
+            let height = img.height
+            const max = 1024
+            if (width > height) {
+              if (width > max) {
+                height *= max / width
+                width = max
+              }
+            } else {
+              if (height > max) {
+                width *= max / height
+                height = max
+              }
+            }
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            ctx?.drawImage(img, 0, 0, width, height)
+            resolve(canvas.toDataURL('image/jpeg', 0.7)) // Calidad 0.7 para reducir peso
+          }
+          img.onerror = reject
+          img.src = e.target?.result as string
+        }
         reader.onerror = reject
         reader.readAsDataURL(file)
       })
 
-      const result = await analyzeInventoryImage(base64)
+      const result = await analyzeInventoryImage(resizedBase64)
       if (result) {
         setFormData(prev => ({
           ...prev,
@@ -58,6 +85,8 @@ export default function InventarioForm() {
           categoria: result.categoria || prev.categoria,
           observaciones: result.descripcion_breve || prev.observaciones
         }))
+      } else {
+        console.warn('AI analysis returned no structured data')
       }
     } catch (err: unknown) {
       console.error('AI Analysis Error:', err)

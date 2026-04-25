@@ -41,20 +41,19 @@ export async function analyzeInventoryImage(base64Image: string) {
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
       try {
-        return JSON.parse(jsonMatch[0])
+        const cleanJson = JSON.parse(jsonMatch[0])
+        return cleanJson
       } catch (parseError) {
-        console.error('JSON Parse error in vision:', parseError)
-        throw new Error('La IA devolvió un formato inválido')
+        console.error('JSON Parse error in vision:', parseError, 'Text:', text)
+        return null // Devolver null en lugar de lanzar error para evitar crash en SSR/Actions
       }
     }
     
-    throw new Error('No se pudo identificar información estructurada en la imagen')
+    console.warn('No structured JSON found in AI response')
+    return null
     
   } catch (error: unknown) {
     console.error('Error in analyzeInventoryImage:', error)
-    if (error instanceof Error && error.message.includes('API_KEY')) {
-      throw new Error('Configuración incompleta: GEMINI_API_KEY no válida o ausente')
-    }
-    throw new Error('Error al analizar la imagen: ' + (error instanceof Error ? error.message : 'Error desconocido'))
+    return null // Retornar null para que el cliente lo maneje sin crashear el render
   }
 }
