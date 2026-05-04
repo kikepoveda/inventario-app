@@ -93,6 +93,48 @@ export async function createInventarioItem(item: Omit<InventarioInsert, 'centro_
   return data
 }
 
+export async function createInventarioItemsBulk(items: Omit<InventarioInsert, 'centro_id'>[]) {
+  const supabase = await createClient()
+  
+  // 1. Verificar autenticación
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    throw new Error('No autorizado: Debes iniciar sesión')
+  }
+
+  // 2. Obtener centro_id
+  const { data: perfil, error: perfilError } = await supabase
+    .from('perfiles')
+    .select('centro_id')
+    .eq('id', user.id)
+    .single()
+
+  if (perfilError || !perfil?.centro_id) {
+    throw new Error('No se encontró el centro asociado a tu usuario.')
+  }
+
+  // 3. Preparar items con centro_id
+  const itemsToInsert = items.map(item => ({
+    ...item,
+    centro_id: perfil.centro_id
+  }))
+
+  // 4. Insertar en bloque
+  console.log(`Bulk creating ${itemsToInsert.length} items for centro:`, perfil.centro_id)
+  const { data, error } = await supabase
+    .from('inventario')
+    .insert(itemsToInsert)
+    .select()
+
+  if (error) {
+    console.error('Database error in createInventarioItemsBulk:', error)
+    throw new Error(`Error al crear los ítems: ${error.message}`)
+  }
+  
+  revalidatePath('/dashboard/inventario')
+  return data
+}
+
 export async function updateInventarioItem(id: string, item: InventarioUpdate) {
   const supabase = await createClient()
   
